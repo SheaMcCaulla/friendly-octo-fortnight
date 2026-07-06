@@ -1,0 +1,48 @@
+---
+name: Tooltip
+---
+
+import React, { useState } from 'react';
+
+export const TOOLTIP_POSITION_CLASSES = {
+  top: 'bottom-full left-1/2 mb-2 -translate-x-1/2',
+  bottom: 'top-full left-1/2 mt-2 -translate-x-1/2',
+  left: 'right-full top-1/2 mr-2 -translate-y-1/2',
+  right: 'left-full top-1/2 ml-2 -translate-y-1/2',
+};
+
+export const Tooltip = ({ children, label, position = 'top' }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [tooltipId] = useState(() => `tooltip-${Math.random().toString(36).slice(2, 9)}`);
+
+  const show = () => setIsOpen(true);
+  const hide = () => setIsOpen(false);
+
+  return (
+    <span className="relative inline-block" onMouseEnter={show} onMouseLeave={hide}>
+      <button
+        type="button"
+        aria-describedby={tooltipId}
+        onFocus={show}
+        onBlur={hide}
+        onKeyDown={(event) => event.key === 'Escape' && hide()}
+        className="cursor-help border-b border-dashed border-gray-400 bg-transparent p-0 font-inherit text-inherit outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-gray-500"
+      >
+        {children}
+      </button>
+      {isOpen && (
+        <span
+          id={tooltipId}
+          role="tooltip"
+          className={`absolute z-10 w-max max-w-xs rounded-md bg-gray-900 px-2 py-1 text-xs text-white shadow-md dark:bg-gray-700 ${
+            TOOLTIP_POSITION_CLASSES[position] || TOOLTIP_POSITION_CLASSES.top
+          }`}
+        >
+          {label}
+        </span>
+      )}
+    </span>
+  );
+};
+
+<p>Every request must include a valid <Tooltip label="A unique string used to authenticate your API requests. Find yours under Settings > API Keys.">API key</Tooltip> in the <code>Authorization</code> header.</p>

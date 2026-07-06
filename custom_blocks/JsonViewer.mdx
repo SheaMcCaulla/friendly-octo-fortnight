@@ -1,0 +1,107 @@
+---
+name: JsonViewer
+---
+
+import React, { useState } from 'react';
+
+export const JSON_VALUE_COLORS = {
+  string: 'text-green-600 dark:text-green-400',
+  number: 'text-blue-600 dark:text-blue-400',
+  boolean: 'text-purple-600 dark:text-purple-400',
+  null: 'text-gray-400 dark:text-gray-500',
+};
+
+export function getJsonType(value) {
+  if (value === null) return 'null';
+  if (Array.isArray(value)) return 'array';
+  return typeof value;
+}
+
+export function JsonNode({ name, value, depth, collapsedDepth }) {
+  const type = getJsonType(value);
+  const isExpandable = type === 'object' || type === 'array';
+  const [isOpen, setIsOpen] = useState(depth < collapsedDepth);
+
+  if (!isExpandable) {
+    return (
+      <div className="pl-4">
+        {name !== undefined && <span className="text-gray-500 dark:text-gray-400">&quot;{name}&quot;: </span>}
+        <span className={JSON_VALUE_COLORS[type] || 'text-gray-800 dark:text-gray-200'}>
+          {type === 'string' ? `"${value}"` : String(value)}
+        </span>
+      </div>
+    );
+  }
+
+  const entries = type === 'array' ? value.map((item, index) => [index, item]) : Object.entries(value);
+  const [openBracket, closeBracket] = type === 'array' ? ['[', ']'] : ['{', '}'];
+
+  return (
+    <div className="pl-4">
+      <button
+        type="button"
+        onClick={() => setIsOpen((prev) => !prev)}
+        className="inline-flex items-center gap-1 text-left text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+      >
+        <i className={`fa-solid fa-caret-${isOpen ? 'down' : 'right'} text-[10px]`} aria-hidden="true" />
+        {name !== undefined && <span>&quot;{name}&quot;: </span>}
+        <span>{openBracket}</span>
+        {!isOpen && <span className="text-gray-400">&hellip;{closeBracket}</span>}
+      </button>
+      {isOpen && (
+        <>
+          {entries.map(([childName, childValue]) => (
+            <JsonNode key={childName} name={childName} value={childValue} depth={depth + 1} collapsedDepth={collapsedDepth} />
+          ))}
+          <div className="pl-4 text-gray-500 dark:text-gray-400">{closeBracket}</div>
+        </>
+      )}
+    </div>
+  );
+}
+
+export const JsonViewer = ({ data, json, collapsedDepth = 1 }) => {
+  const [copied, setCopied] = useState(false);
+  let parsed = data;
+
+  if (parsed === undefined && json) {
+    try {
+      parsed = JSON.parse(json);
+    } catch (error) {
+      parsed = { error: 'Invalid JSON' };
+    }
+  }
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(JSON.stringify(parsed, null, 2));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
+  return (
+    <div className="relative rounded-md border border-gray-200 bg-gray-50 p-3 font-mono text-sm dark:border-gray-700 dark:bg-gray-900">
+      <button
+        type="button"
+        onClick={handleCopy}
+        aria-label="Copy JSON"
+        className="absolute right-2 top-2 rounded-md border border-gray-300 bg-white px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+      >
+        <i className={`fa-solid ${copied ? 'fa-check' : 'fa-copy'} mr-1`} aria-hidden="true" />
+        {copied ? 'Copied' : 'Copy'}
+      </button>
+      <JsonNode value={parsed} depth={0} collapsedDepth={collapsedDepth} />
+    </div>
+  );
+};
+
+<JsonViewer
+  collapsedDepth={2}
+  data={{
+    id: 'evt_1a2b3c',
+    type: 'payment.succeeded',
+    amount: 2000,
+    currency: 'usd',
+    livemode: false,
+    metadata: { orderId: 'order_98765' },
+  }}
+/>
